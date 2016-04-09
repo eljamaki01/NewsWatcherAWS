@@ -1,0 +1,37 @@
+{
+  "name": "NewsWatcher",
+  "version": "0.0.1",
+  "description": "NewsWatcher",
+  "main": "server.js",
+  "author": {
+    "name": "BUSHMAN",
+    "email": ""
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "async": "^1.5.2",
+    "aws-sdk": "^2.2.43",
+    "bcryptjs": "^2.3.0",
+    "body-parser": "^1.14.2",
+    "express": "^4.13.4",
+    "joi": "^8.0.1",
+    "jwt-simple": "^0.4.1",
+    "kerberos": "0.0.18",
+    "mongodb": "^2.1.5",
+    "morgan": "^1.6.1",
+    "response-time": "^2.3.1",
+    "v8-profiler": "^5.5.0"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-bump": "^2.1.0",
+    "gulp-git": "^1.7.0",
+    "gulp-mocha": "^2.2.0",
+    "mocha": "^2.4.5",
+    "run-sequence": "^1.1.5",
+    "selenium-webdriver": "^2.53.1",
+    "supertest": "^1.2.0"
+  }
+}
