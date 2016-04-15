@@ -73,7 +73,7 @@ process.on('message', function (m) {
 //
 function refreshStoriesMSG(doc, globalNewsDoc, callback) {
     if (!globalNewsDoc) {
-        db.collection.findOne({ _id: ObjectId("56b3b297e4b0b133d46da115") }, function (err, gDoc) {
+        db.collection.findOne({ _id: ObjectId(config.GLOBAL_STORIES_ID) }, function (err, gDoc) {
             if (err) {
                 console.log('FORK_ERROR: global news readDocument() read err:' + err);
                 if (callback)
@@ -206,7 +206,7 @@ newsPullBackgroundTimer = setInterval(function () {
             console.log('success');
 			
             // Do the replacement of the news stories in the single master Document holder
-            db.collection.findOne({ _id: ObjectId("56b3b297e4b0b133d46da115") }, function (err, globalNewsDoc) {
+            db.collection.findOne({ _id: ObjectId(config.GLOBAL_STORIES_ID) }, function (err, globalNewsDoc) {
                 if (err) {
                     console.log({ msg: 'FORK_ERROR', Error: 'Error with the global news doc read request: ' + JSON.stringify(err.body, null, 4) });
                 } else {
