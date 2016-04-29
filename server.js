@@ -12,6 +12,7 @@ var bodyParser = require('body-parser'); // Easy access to the HTTP request body
 var cp = require('child_process'); // Forking a separate Node.js processes
 var responseTime = require('response-time'); // For code timing checks for performance logging
 var assert = require('assert'); // assert testing of values
+var helmet = require('helmet'); // Helmet module for HTTP header hack mitigations
 
 var config = require('./config');
 var users = require('./routes/users');
@@ -19,7 +20,19 @@ var session = require('./routes/session');
 var sharedNews = require('./routes/sharedNews');
 
 var app = express();
-app.set('x-powered-by', false);
+app.use(helmet()); // Take the defaults to start with
+app.use(helmet.csp({
+  // Specify directives for content sources
+  directives: {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'", "'unsafe-inline'", 'ajax.googleapis.com', 'maxcdn.bootstrapcdn.com'],
+    styleSrc: ["'self'", "'unsafe-inline'", 'maxcdn.bootstrapcdn.com'],
+    fontSrc: ["'self'", 'maxcdn.bootstrapcdn.com'],
+    imgSrc: ['*']
+    // reportUri: '/report-violation',
+  }
+}));
+//app.use(helmet.noCache());
 
 // Adds an X-Response-Time header to responses to measure response times
 app.use(responseTime());
