@@ -242,7 +242,12 @@ angular.module('app', ['ngRoute'])
 			
 			$scope.$emit('msg', "News fetched");
 		}, function errorCallback(response) {
+			$rootScope.loggedIn = false;
+			$rootScope.session = null;
+			$http.defaults.headers.common["x-auth"] = null;
+			$window.localStorage.removeItem("userToken");
 			$scope.$emit('msg', "News fetch failed. " + response.data.message);
+			$location.path('/').replace();
 		});
 		
 		$scope.selectOne = function (index) {
