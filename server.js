@@ -13,6 +13,7 @@ var cp = require('child_process'); // Forking a separate Node.js processes
 var responseTime = require('response-time'); // For code timing checks for performance logging
 var assert = require('assert'); // assert testing of values
 var helmet = require('helmet'); // Helmet module for HTTP header hack mitigations
+var RateLimit = require('express-rate-limit'); // IP based rate limiter
 
 var config = require('./config');
 var users = require('./routes/users');
@@ -21,6 +22,15 @@ var sharedNews = require('./routes/sharedNews');
 
 var app = express();
 app.enable('trust proxy'); // Since we are behind Nginx load balancing with Elastic Beanstalk
+
+var limiter = new RateLimit({
+  windowMs: 15*60*1000, // 15 minutes 
+  max: 100, // limit each IP to 100 requests per windowMs 
+  delayMs: 0 // disable delaying - full speed until the max limit is reached 
+});
+//  apply to all requests 
+app.use(limiter);
+
 app.use(helmet()); // Take the defaults to start with
 app.use(helmet.csp({
   // Specify directives for content sources
