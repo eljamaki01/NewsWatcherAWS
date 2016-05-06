@@ -125,7 +125,7 @@ function refreshStories(doc, globalNewsDoc, callback) {
             }
         }
     }
-			
+
     // For the test runs, we can inject news stories that will be under our control
     // Of course, these test accounts are only temporary, but they could conflict with the 15 minute run to replace, so maybe put this code into the SP also?
     if (doc.newsFilters.length == 1 &&
@@ -136,7 +136,7 @@ function refreshStories(doc, globalNewsDoc, callback) {
             doc.newsFilters[0].newsStories[0].title = "testingKeyword title" + i;
         }
     }
-			
+
     // Do the replacement of the news stories
     db.collection.findOneAndUpdate({ _id: ObjectId(doc._id) }, { $set: { "newsFilters": doc.newsFilters } }, function (err, result) {
         if (err) {
@@ -204,7 +204,7 @@ newsPullBackgroundTimer = setInterval(function () {
             console.log('failure');
         } else {
             console.log('success');
-			
+
             // Do the replacement of the news stories in the single master Document holder
             db.collection.findOne({ _id: ObjectId(config.GLOBAL_STORIES_ID) }, function (err, globalNewsDoc) {
                 if (err) {
@@ -212,7 +212,13 @@ newsPullBackgroundTimer = setInterval(function () {
                 } else {
                     globalNewsDoc.newsStories = [];
                     for (var i = 0; i < results.length; i++) {
-                        var news = JSON.parse(results[i]);
+                        // JSON.parse is syncronous and it will throw an exception on invalid JSON, so we can catch it
+                        try {
+                            var news = JSON.parse(results[i]);
+                        } catch (e) {
+                            console.error(e);
+                            return;
+                        }
                         for (var j = 0; j < news.results.length; j++) {
                             var xferNewsStory = {
                                 link: news.results[j].url,
@@ -225,7 +231,7 @@ newsPullBackgroundTimer = setInterval(function () {
                             globalNewsDoc.newsStories.push(xferNewsStory);
                         }
                     }
-					
+
                     async.eachSeries(globalNewsDoc.newsStories, function (story, innercallback) {
                         bcrypt.hash(story.link, 10, function getHash(err, hash) {
                             if (err)
