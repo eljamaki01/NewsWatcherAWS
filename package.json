@@ -23,8 +23,7 @@
     "kerberos": "0.0.18",
     "mongodb": "^2.1.5",
     "morgan": "^1.6.1",
-    "response-time": "^2.3.1",
-    "v8-profiler": "^5.5.0"
+    "response-time": "^2.3.1"
   },
   "devDependencies": {
     "gulp": "^3.9.1",

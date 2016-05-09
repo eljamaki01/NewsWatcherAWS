@@ -117,38 +117,39 @@ app.use('/api/sharednews', sharedNews);
 
 //
 // Code for running CPU profiling and also memory heap dumps to help find memory leaks
-var fs = require('fs');
-var profiler = require('v8-profiler');
+// package.json -> "v8-profiler": "^5.5.0"
+// var fs = require('fs');
+// var profiler = require('v8-profiler');
 
-app.post('/testing/startcpuprofile', function(req, res) {
-    profiler.startProfiling();
-    res.status(201).json({ msg: 'CPU profile started' });
-});
+// app.post('/testing/startcpuprofile', function(req, res) {
+//     profiler.startProfiling();
+//     res.status(201).json({ msg: 'CPU profile started' });
+// });
 
-app.post('/testing/stopcpuprofile', function(req, res) {
-    var profileResult = profiler.stopProfiling();
+// app.post('/testing/stopcpuprofile', function(req, res) {
+//     var profileResult = profiler.stopProfiling();
 
-    profileResult.export()
-        .pipe(fs.createWriteStream('profile.cpuprofile'))
-        .on('finish', function() {
-            profileResult.delete();
-        });
+//     profileResult.export()
+//         .pipe(fs.createWriteStream('profile.cpuprofile'))
+//         .on('finish', function() {
+//             profileResult.delete();
+//         });
 
-    res.status(201).json({ msg: 'CPU profile stopped' });
-});
+//     res.status(201).json({ msg: 'CPU profile stopped' });
+// });
 
-var snapCount = 0;
-app.post('/testing/takeheapsnapshot', function(req, res) {
-    var snapshot = profiler.takeSnapshot();
+// var snapCount = 0;
+// app.post('/testing/takeheapsnapshot', function(req, res) {
+//     var snapshot = profiler.takeSnapshot();
 
-    snapshot.export()
-        .pipe(fs.createWriteStream('snap' + snapCount + '.heapsnapshot'))
-        .on('finish', snapshot.delete);
+//     snapshot.export()
+//         .pipe(fs.createWriteStream('snap' + snapCount + '.heapsnapshot'))
+//         .on('finish', snapshot.delete);
 
-    snapCount++;
+//     snapCount++;
 
-    res.status(201).json({ msg: 'Memory HEAP snapshop taken' });
-});
+//     res.status(201).json({ msg: 'Memory HEAP snapshop taken' });
+// });
 
 //
 // catch 404 and forward to error handler
