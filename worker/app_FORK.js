@@ -13,7 +13,7 @@
 //
 var config = require('../config');
 var bcrypt = require('bcryptjs');
-var http = require("http");
+var https = require("https");
 var async = require('async');
 var assert = require('assert');
 var ObjectId = require('mongodb').ObjectID;
@@ -160,19 +160,19 @@ function refreshStories(doc, globalNewsDoc, callback) {
 //
 var count = 0;
 newsPullBackgroundTimer = setInterval(function () {
-    // The Faroo service states that we should not call more than once a second
-    // They have paging for returning of results and seem to always have 100 results and you can get 10 at a time as you page through.
+    // The New York Times news service states that we should not call more than five times a second
+    // We have to call it over and over again, because there are multiple news categoris, so space each out by half a second
     // It will error if the size of this Document exceeds the maximum size (512KB). To fix this, split it up into as many as necessary.
     var date = new Date();
     console.log("app_FORK: datetime tick: " + date.toUTCString());
-    async.timesSeries(10, function (n, next) {
+    async.timesSeries(config.NEWYORKTIMES_CATEGORIES.length, function (n, next) {
         setTimeout(function () {
-            var start = (n * 10) + 1;
-            console.log('Get news stories from FAROO. Pass #', start);
+            console.log('Get news stories from NYT. Pass #', n);
             try {
-                http.get({
-                    host: 'www.faroo.com',
-                    path: '/api?q=&start=' + start + '&length=10&rlength=0&l=en&src=news&f=json&key=' + config.FAROO_KEY
+                https.get({
+                    host: 'api.nytimes.com',
+                    path: '/svc/topstories/v2/' + config.NEWYORKTIMES_CATEGORIES[n] + '.json',
+                    headers: { 'api-key': config.NEWYORKTIMES_API_KEY }
                 }, function (res) {
                     var body = '';
                     res.on('data', function (d) {
@@ -184,6 +184,7 @@ newsPullBackgroundTimer = setInterval(function () {
                 }).on('error', function (err) {
                     // handle errors with the request itself
                     console.log({ msg: 'FORK_ERROR', Error: 'Error with the request: ' + err.message });
+                    return;
                 });
             }
             catch (err) {
@@ -198,7 +199,7 @@ newsPullBackgroundTimer = setInterval(function () {
                     console.log('app_FORK.js error. err:' + err);
                 }
             }
-        }, 1500);
+        }, 500);
     }, function (err, results) {
         if (err) {
             console.log('failure');
@@ -211,8 +212,9 @@ newsPullBackgroundTimer = setInterval(function () {
                     console.log({ msg: 'FORK_ERROR', Error: 'Error with the global news doc read request: ' + JSON.stringify(err.body, null, 4) });
                 } else {
                     globalNewsDoc.newsStories = [];
+                    var allNews = [];
                     for (var i = 0; i < results.length; i++) {
-                        // JSON.parse is syncronous and it will throw an exception on invalid JSON, so we can catch it
+                        // JSON.parse is syncronous and it will throw an exception on invalid JSON, so we need to catch it
                         try {
                             var news = JSON.parse(results[i]);
                         } catch (e) {
@@ -222,22 +224,30 @@ newsPullBackgroundTimer = setInterval(function () {
                         for (var j = 0; j < news.results.length; j++) {
                             var xferNewsStory = {
                                 link: news.results[j].url,
-                                imageUrl: news.results[j].iurl,
                                 title: news.results[j].title,
-                                contentSnippet: news.results[j].kwic,
-                                source: news.results[j].domain,
-                                date: news.results[j].date
+                                contentSnippet: news.results[j].abstract,
+                                source: news.results[j].section,
+                                date: new Date(news.results[j].updated_date).getTime()
                             };
-                            globalNewsDoc.newsStories.push(xferNewsStory);
+                            // Only take stories with images
+                            if (news.results[j].multimedia.length > 0) {
+                                xferNewsStory.imageUrl = news.results[j].multimedia[0].url;
+                                allNews.push(xferNewsStory);
+                            }
                         }
                     }
 
-                    async.eachSeries(globalNewsDoc.newsStories, function (story, innercallback) {
+                    async.eachSeries(allNews, function (story, innercallback) {
                         bcrypt.hash(story.link, 10, function getHash(err, hash) {
                             if (err)
                                 innercallback(err);
 
+                            // Only add the story if it is not in there already.
+                            // The problem is that stories on NYT can be shared between categories
                             story.storyID = hash.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+                            if (globalNewsDoc.newsStories.findIndex(function (o) { return o.storyID == story.storyID; }) == -1) {
+                                globalNewsDoc.newsStories.push(story);
+                            }
                             innercallback();
                         });
                     }, function (err) {
