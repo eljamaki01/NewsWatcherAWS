@@ -245,7 +245,12 @@ newsPullBackgroundTimer = setInterval(function () {
                             // Only add the story if it is not in there already.
                             // The problem is that stories on NYT can be shared between categories
                             story.storyID = hash.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-                            if (globalNewsDoc.newsStories.findIndex(function (o) { return o.storyID == story.storyID; }) == -1) {
+                            if (globalNewsDoc.newsStories.findIndex(function (o) {
+                                if (o.storyID == story.storyID || o.title == story.title)
+                                    return true;
+                                else
+                                    return false;
+                            }) == -1) {
                                 globalNewsDoc.newsStories.push(story);
                             }
                             innercallback();
@@ -264,7 +269,7 @@ newsPullBackgroundTimer = setInterval(function () {
             });
         }
     });
-}, 120 * 60 * 1000);
+}, 240 * 60 * 1000);
 
 function refreshAllUserStories(globalNewsDoc) {
     db.collection.findOneAndUpdate({ _id: globalNewsDoc._id }, { $set: { newsStories: globalNewsDoc.newsStories } }, function (err, result) {
