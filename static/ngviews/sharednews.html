@@ -9,8 +9,18 @@
 		<div class="media-body">
 			<h class="media-heading"><b id="{{ sharedStory.story.storyID }}">{{ sharedStory.story.title }}</b></h>
 			<p>{{ sharedStory.story.contentSnippet }}</p>
-			{{ sharedStory.story.source }}   <span>{{ sharedStory.story.hours }}</span>
+			{{ sharedStory.story.source }} <span>{{ sharedStory.story.hours }}</span>
 			<a href="javascript:void(0)" ng-click="openModal($index)">Comments</a>
+		</div>
+	</li>
+	<li class="media">
+		<div class="media-left">
+			<a href="http://developer.nytimes.com" target="_blank">
+				<img ng-src="poweredby_nytimes_30b.png">
+			</a>
+		</div>
+		<div class="media-body">
+			<h class="media-heading"><b>Data provided by The New York Times</b></h>
 		</div>
 	</li>
 </ul>
@@ -35,7 +45,7 @@
 							</li>
 						</ul>
 					</div>
-					<div ng-show="showAddComment()" >
+					<div ng-show="showAddComment()">
 						<div class="form-group">
 							<label for="usrname"><span class="glyphicon glyphicon-user"></span> Comment</label>
 							<input id="txtComment" type="text" maxlength="250" class="form-control" placeholder="Enter your comment" ng-model="comment">
@@ -50,4 +60,3 @@
 		</div>
 	</div>
 </div>
-
