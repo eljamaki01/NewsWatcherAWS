@@ -84,7 +84,7 @@ router.post('/', function postUser(req, res, next) {
 // Delete a User in the Collection for NewsWatcher.
 //
 router.delete('/:id', authHelper.checkAuth, function (req, res, next) {
-    // Verify that the passed in email to delete is the same as that in the auth token
+    // Verify that the passed in id to delete is the same as that in the auth token
     if (req.params.id != req.auth.userId)
         return next(new Error('Invalid request for account deletion'));
         
@@ -107,7 +107,7 @@ router.delete('/:id', authHelper.checkAuth, function (req, res, next) {
 // Get a NewsWatcher user
 //
 router.get('/:id', authHelper.checkAuth, function (req, res, next) {
-    // Verify that the passed in email to delete is the same as that in the auth token
+    // Verify that the passed in id to delete is the same as that in the auth token
     if (req.params.id != req.auth.userId)
         return next(new Error('Invalid request for account fetch'));
 
@@ -134,7 +134,7 @@ router.get('/:id', authHelper.checkAuth, function (req, res, next) {
 // Update a user profile. For example, they have edited their newsFilters.
 //
 router.put('/:id', authHelper.checkAuth, function (req, res, next) {
-    // Verify that the passed in token is the same as that in the auth token
+    // Verify that the passed in id is the same as that in the auth token
     if (req.params.id != req.auth.userId)
         return next(new Error('Invalid request for account deletion'));
 	
@@ -174,7 +174,7 @@ router.put('/:id', authHelper.checkAuth, function (req, res, next) {
         } else {
             // MongoDB implements optomistic concurrency for us.
             // We were not holding on to the document anyway, so we just do a quick read and replace of just those properties and not the complete document.
-            // It does really matter if news stories were updated in the mean time (i.e. user sat there taking their time updating their news profile)
+            // It matters if news stories were updated in the mean time (i.e. user sat there taking their time updating their news profile)
             // because we will force that to update as part of this operation.
             // We need the {returnOriginal: false}, so a test could verify what happened, otherwise the defualt is to return the origional.
             req.db.collection.findOneAndUpdate({ type: 'USER_TYPE', _id: ObjectId(req.auth.userId) },
@@ -202,7 +202,7 @@ router.put('/:id', authHelper.checkAuth, function (req, res, next) {
 // There is a limit to how many can be saved.
 //
 router.post('/:id/savedstories', authHelper.checkAuth, function (req, res, next) {
-    // Verify that the passed in email to delete is the same as that in the auth token
+    // Verify that the passed in id to delete is the same as that in the auth token
     if (req.params.id != req.auth.userId)
         return next(new Error('Invalid request for saving story'));
     
@@ -227,7 +227,7 @@ router.post('/:id/savedstories', authHelper.checkAuth, function (req, res, next)
         // A. Story is not aready in there.
         // B. We limit the number of saved stories to 30
         // We could add to the query operators -> "savedStories": { $ne: req.body }
-        // But, we cannot differentiate however between the failures we report back to the user.
+        // But, we cannot differentiate between the failures we report back to the user.
         // We can just let addToSet take care of the comparison and silently fail as the user does not need to know if the story was really already there
         req.db.collection.findOneAndUpdate({ type: 'USER_TYPE', _id: ObjectId(req.auth.userId), $where: 'this.savedStories.length<29' },
             { $addToSet: { savedStories: req.body } },
@@ -252,7 +252,7 @@ router.post('/:id/savedstories', authHelper.checkAuth, function (req, res, next)
 // Delete a story from the save folder.
 //
 router.delete('/:id/savedstories/:sid', authHelper.checkAuth, function (req, res, next) {
-    // Verify that the passed in email to delete is the same as that in the auth token
+    // Verify that the passed in id to delete is the same as that in the auth token
     if (req.params.id != req.auth.userId)
         return next(new Error('Invalid request for deletion of saved story'));
         
@@ -265,7 +265,7 @@ router.delete('/:id/savedstories/:sid', authHelper.checkAuth, function (req, res
                 return next(err);
             } else if (result.ok != 1) {
                 console.log("+++POSSIBLE save story delete CONTENTION ERROR?+++ result:", result);
-                return next(new Error('Story save failure'));
+                return next(new Error('Story delete failure'));
             }
 
             res.status(200).json(result.value);

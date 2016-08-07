@@ -36,8 +36,12 @@ router.post('/', function postSession(req, res, next) {
 
             bcrypt.compare(req.body.password, user.passwordHash, function comparePassword(err, match) {
                 if (match) {
-                    var token = jwt.encode({ authorized: true, sessionIP: req.ip, sessionUA: req.headers['user-agent'], userId: user._id.toHexString(), displayName: user.displayName }, config.JWT_SECRET);
-                    res.status(201).json({ displayName: user.displayName, userId: user._id.toHexString(), token: token, msg: 'Authorized' });
+                    try {
+                        var token = jwt.encode({ authorized: true, sessionIP: req.ip, sessionUA: req.headers['user-agent'], userId: user._id.toHexString(), displayName: user.displayName }, config.JWT_SECRET);
+                        res.status(201).json({ displayName: user.displayName, userId: user._id.toHexString(), token: token, msg: 'Authorized' });
+                    } catch (err) {
+                        return next(err);
+                    }
                 } else {
                     return next(new Error('Wrong password'));
                 }
@@ -50,7 +54,7 @@ router.post('/', function postSession(req, res, next) {
 // Delete the token as a user logs out
 //
 router.delete('/:id', authHelper.checkAuth, function (req, res, next) {
-    // Verify the passed in email is the same as that in the auth token
+    // Verify the passed in id is the same as that in the auth token
     if (req.params.id != req.auth.userId)
         return next(new Error('Invalid request for logout'));
 

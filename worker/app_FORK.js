@@ -19,6 +19,8 @@ var assert = require('assert');
 var ObjectId = require('mongodb').ObjectID;
 var MongoClient = require('mongodb').MongoClient;
 
+var globalNewsDoc;
+
 //
 // MongoDB database connection initialization
 //
@@ -59,7 +61,7 @@ process.on('message', function (m) {
         if (m.msg == 'REFRESH_STORIES') {
             // With setImmediate(), callbacks run after I/O. FYI: process.nextTick() queues up callbacks that run in the event loop before I/O.
             setImmediate(function (doc) {
-                refreshStoriesMSG(doc, null, null);
+                refreshStoriesMSG(doc, null);
             }, m.doc);
         }
     } else {
@@ -71,7 +73,7 @@ process.on('message', function (m) {
 // Resync news stories after a user has altered their filter.
 // For a given user and for every filter they have set up, search all news stories for match.
 //
-function refreshStoriesMSG(doc, globalNewsDoc, callback) {
+function refreshStoriesMSG(doc, callback) {
     if (!globalNewsDoc) {
         db.collection.findOne({ _id: config.GLOBAL_STORIES_ID }, function (err, gDoc) {
             if (err) {
@@ -81,14 +83,15 @@ function refreshStoriesMSG(doc, globalNewsDoc, callback) {
                 else
                     return;
             } else {
-                refreshStories(doc, gDoc, callback);
+                globalNewsDoc = gDoc;
+                refreshStories(doc, callback);
             }
         });
     } else {
-        refreshStories(doc, globalNewsDoc, callback);
+        refreshStories(doc, callback);
     }
 }
-function refreshStories(doc, globalNewsDoc, callback) {
+function refreshStories(doc, callback) {
     // Loop through all newsFilters and seek matches for all returned stories
     for (var filterIdx = 0; filterIdx < doc.newsFilters.length; filterIdx++) {
         doc.newsFilters[filterIdx].newsStories = [];
@@ -207,11 +210,11 @@ newsPullBackgroundTimer = setInterval(function () {
             console.log('success');
 
             // Do the replacement of the news stories in the single master Document holder
-            db.collection.findOne({ _id: config.GLOBAL_STORIES_ID }, function (err, globalNewsDoc) {
+            db.collection.findOne({ _id: config.GLOBAL_STORIES_ID }, function (err, gDoc) {
                 if (err) {
                     console.log({ msg: 'FORK_ERROR', Error: 'Error with the global news doc read request: ' + JSON.stringify(err.body, null, 4) });
                 } else {
-                    globalNewsDoc.newsStories = [];
+                    gDoc.newsStories = [];
                     var allNews = [];
                     for (var i = 0; i < results.length; i++) {
                         // JSON.parse is syncronous and it will throw an exception on invalid JSON, so we need to catch it
@@ -245,13 +248,13 @@ newsPullBackgroundTimer = setInterval(function () {
                             // Only add the story if it is not in there already.
                             // The problem is that stories on NYT can be shared between categories
                             story.storyID = hash.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-                            if (globalNewsDoc.newsStories.findIndex(function (o) {
+                            if (gDoc.newsStories.findIndex(function (o) {
                                 if (o.storyID == story.storyID || o.title == story.title)
                                     return true;
                                 else
                                     return false;
                             }) == -1) {
-                                globalNewsDoc.newsStories.push(story);
+                                gDoc.newsStories.push(story);
                             }
                             innercallback();
                         });
@@ -260,9 +263,10 @@ newsPullBackgroundTimer = setInterval(function () {
                             console.log('failure on story id creation');
                         } else {
                             console.log('story id creation success');
-                            setImmediate(function (doc) {
-                                refreshAllUserStories(doc, null, null);
-                            }, globalNewsDoc);
+                            globalNewsDoc = gDoc;
+                            setImmediate(function () {
+                                refreshAllUserStories();
+                            });
                         }
                     });
                 }
@@ -271,7 +275,7 @@ newsPullBackgroundTimer = setInterval(function () {
     });
 }, 240 * 60 * 1000);
 
-function refreshAllUserStories(globalNewsDoc) {
+function refreshAllUserStories() {
     db.collection.findOneAndUpdate({ _id: globalNewsDoc._id }, { $set: { newsStories: globalNewsDoc.newsStories } }, function (err, result) {
         if (err) {
             console.log('FORK_ERROR Replace of global newsStories failed:', err);
@@ -285,7 +289,7 @@ function refreshAllUserStories(globalNewsDoc) {
                 function (callback) {
                     cursor.next(function (err, doc) {
                         if (doc) {
-                            refreshStories(doc, globalNewsDoc, function (err) {
+                            refreshStories(doc, function (err) {
                                 callback(null);
                             });
                         } else {
