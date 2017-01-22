@@ -14,6 +14,7 @@ var responseTime = require('response-time'); // For code timing checks for perfo
 var assert = require('assert'); // assert testing of values
 var helmet = require('helmet'); // Helmet module for HTTP header hack mitigations
 var RateLimit = require('express-rate-limit'); // IP based rate limiter
+var csp = require('helmet-csp');
 
 var config = require('./config');
 var users = require('./routes/users');
@@ -32,7 +33,7 @@ var limiter = new RateLimit({
 app.use(limiter);
 
 app.use(helmet()); // Take the defaults to start with
-app.use(helmet.csp({
+app.use(csp({
   // Specify directives for content sources
   directives: {
     defaultSrc: ["'self'"],
